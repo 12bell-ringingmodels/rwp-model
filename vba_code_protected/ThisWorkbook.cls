@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
     If Sheets("Settings").Range("optDevTeardown") Then
-        ExportModules "vba_code"
+        ExportModules "vba_code", "vba_code_protected"
     End If
 End Sub
 

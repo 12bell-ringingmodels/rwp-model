@@ -1,3 +1,4 @@
+Attribute VB_Name = "RodModel2"
 Public Const MAXIMUM_TEAMS As Integer = 10
 Public Const MAXIMUM_BELLS As Integer = 16
 

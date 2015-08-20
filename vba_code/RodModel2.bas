@@ -1,6 +1,7 @@
 Attribute VB_Name = "RodModel2"
 Public Const MAXIMUM_TEAMS As Integer = 10
 Public Const MAXIMUM_BELLS As Integer = 16
+Public Const INVALID_STRIKE_TIME As Long = -2147483647
 
 'TODO: Should Offset(-2,2) be Offset(-2,3) - Not sure
 '       Range(avgDevTableTL.Offset(-2, 0), accErrTableTL.Offset(-2, 2)).Merge
@@ -618,16 +619,14 @@ Dim pos As Integer
 Dim thistime As Long
 
   For timeptr = 1 To NumBells(team)
-    TimeOrder(timeptr) = -1
+    TimeOrder(timeptr) = INVALID_STRIKE_TIME
   Next timeptr
-  
-  timeptr = 1
   
   For pos = 1 To NumBells(team)
     thistime = inparray(team, pos, row).time
     'MsgBox (thistime)
     For timeptr = 1 To NumBells(team)
-      If TimeOrder(timeptr) = -1 Then
+      If TimeOrder(timeptr) = INVALID_STRIKE_TIME Then
         TimeOrder(timeptr) = thistime
         Exit For
       End If

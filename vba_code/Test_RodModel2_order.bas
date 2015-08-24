@@ -1,9 +1,12 @@
+Attribute VB_Name = "Test_RodModel2_order"
 Option Explicit
 Option Private Module
 
 ' 1 team, 16 bells, 1 change
-Public TestArray(1, 16, 1) As Strike
-Public NumBells(1) As Integer
+Private TestArray(1, 16, 1) As Strike
+'TODO: Rename this to "NumBells" if global variables are no longer used. Cannot name this "NumBells" 
+'as it would conflict with the variable in RodModel2.
+Private NumBells_test(1) As Integer
 
 '@TestModule
 Private Assert As New Rubberduck.AssertClass
@@ -45,10 +48,10 @@ Public Sub Test_outputUnchangedWhenStrikesAlreadyInOrder_withOffset()
     TestArray(1, 3, 1).time = "300"
     TestArray(1, 4, 1).time = "400"
         
-    NumBells(1) = 4
+    NumBells_test(1) = 4
     
     ' This function creates "TimeOrder"
-    Call RodModel2.order(TestArray, NumBells, 1, 1)
+    Call RodModel2.order(TestArray, NumBells_test, 1, 1)
     
     ' Assert strike times are added in order, with indices 1 to 4
     Assert.AreEqual TimeOrder(1), 100&, "First strike"
@@ -80,8 +83,10 @@ Public Sub Test_outputUnchangedWhenStrikesAlreadyInOrder_withoutOffset()
     TestArray(1, 3, 1).time = "200"
     TestArray(1, 4, 1).time = "300"
         
-    ' This function creates "TimeOrder"
-    Call RodModel2.order(TestArray, NumBells, 1, 1)
+    NumBells_test(1) = 4
+    
+   ' This function creates "TimeOrder"
+    Call RodModel2.order(TestArray, NumBells_test, 1, 1)
     
     ' Assert strike times are added in order, with indices 1 to 4
     Assert.AreEqual TimeOrder(1), 0&, "First strike"
@@ -113,8 +118,10 @@ Public Sub Test_outputChangedWhenStrikesNotAlreadyInOrder_withOffset()
     TestArray(1, 3, 1).time = "400"
     TestArray(1, 4, 1).time = "300"
         
+    NumBells_test(1) = 4
+    
     ' This function creates "TimeOrder"
-    Call RodModel2.order(TestArray, NumBells, 1, 1)
+    Call RodModel2.order(TestArray, NumBells_test, 1, 1)
     
     ' Assert strike times are added in order, with indices 1 to 4
     Assert.AreEqual TimeOrder(1), 100&, "First strike"
@@ -146,8 +153,10 @@ Public Sub Test_outputChangedWhenStrikesNotAlreadyInOrder_withoutOffset()
     TestArray(1, 3, 1).time = "300"
     TestArray(1, 4, 1).time = "200"
         
+    NumBells_test(1) = 4
+    
     ' This function creates "TimeOrder"
-    Call RodModel2.order(TestArray, NumBells, 1, 1)
+    Call RodModel2.order(TestArray, NumBells_test, 1, 1)
     
     ' Assert strike times are added in order, with indices 1 to 4
     Assert.AreEqual TimeOrder(1), 0&, "First strike"

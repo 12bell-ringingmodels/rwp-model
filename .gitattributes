@@ -1,10 +1,11 @@
 # This repo is (sadly) only designed to work with Windows machines
-# therefore we are going to 'hardcode' to CRLF line endings for all text
-* text=crlf
+# This will be dealt with by normalising on the input side, but
+# forcing crlf on the output side
+* text=auto
 
 # Add expected text file types explicitly
-*.bas text
-*.cls text
+*.bas text eol=crlf
+*.cls text eol=crlf
 
 # Add expected binary file types explicitly
 *.xls binary

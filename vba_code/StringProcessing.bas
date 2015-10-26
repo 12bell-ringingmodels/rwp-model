@@ -20,28 +20,16 @@ Public Function SecondsToHoursAndMinutes(ByVal timeInSeconds, Optional ByVal hrM
     End If
 End Function
 
-Public Function GetFileTitle(ByVal filename As String) As String
-    Dim extensionIndex As Integer
-    Dim pathIndex As Integer
-    Dim idx As Integer
-    Dim thisCh As String
 
-    extensionIndex = Len(filename) + 1
-    pathIndex = 0
+Public Function FindLast(ByVal InputString As String, ByVal matchCharacters As String) As Integer
+    Dim matchLocation As Integer
     
-    For idx = Len(filename) To 1 Step -1
-        thisCh = Mid(filename, idx, 1)
-        If thisCh = "." Then
-            If extensionIndex >= Len(filename) Then
-                extensionIndex = idx
-            End If
-        ElseIf thisCh = "\" Then
-            pathIndex = idx
-            Exit For
+    FindLast = 0
+    
+    For matchLocation = Len(InputString) To 1 Step -1
+        If InStr(matchCharacters, Mid(InputString, matchLocation, 1)) > 0 Then
+            FindLast = matchLocation
+            Exit Function
         End If
     Next
-    
-    
-    GetFileTitle = Mid(filename, pathIndex + 1, extensionIndex - pathIndex - 1)
-    
 End Function

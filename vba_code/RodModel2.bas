@@ -488,21 +488,7 @@ End If
 ResumeCalculationAndRedraw wasSuspended
 
 End Sub
-Sub Gen_Contest_PDF()
-    Sheets("SUMMARY").Select
-    
-    SelectSheets GetProgrammaticSheetsCreatedBy("TeamCharts")
-    SelectSheets GetProgrammaticSheetsCreatedBy("Flockton")
-    
-    
-    pdf_filename = Application.GetSaveAsFilename(TeamName(1) & ".pdf", "PDF Files,*.pdf", 1, "Select the output PDF name")
-    If IsNumeric(pdf_filename) Then
-        Exit Sub
-    End If
-    
-    ActiveWorkbook.RunAutoMacros Which:=xlAutoClose
-    ActiveSheet.ExportAsFixedFormat Type:=xlTypePDF, filename:=pdf_filename, Quality:=xlQualityStandard, IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
-End Sub
+
 
 Sub findtouch(i As Integer)
 Dim outofpos As Integer

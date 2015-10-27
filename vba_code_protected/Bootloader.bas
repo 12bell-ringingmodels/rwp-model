@@ -1,5 +1,9 @@
 Attribute VB_Name = "Bootloader"
 Option Explicit
+
+Public Const VBA_CODE_DIRECTORY As String = "vba_code"
+Public Const VBA_CODE_PROTECTED_DIRECTORY As String = "vba_code_protected"
+
 Public Function IsProtectedModule(ByVal moduleName As String) As Boolean
     Dim lcaseName As String
     
@@ -33,9 +37,11 @@ Public Function IsProtectedClassModule(ByVal moduleName As String) As Boolean
 End Function
 
 
-Public Sub ImportModules(ByVal moduleDirectory As String)
+Public Sub ImportModules(ByVal moduleDirectory As String, Optional ByVal removeDuplicateModules As Boolean = True)
     Dim loadPath As String
     Dim targetModule As String
+    Dim vbComp As VBComponent
+    
     
     loadPath = CvtToAbsFile(moduleDirectory)
     
@@ -45,8 +51,16 @@ Public Sub ImportModules(ByVal moduleDirectory As String)
     targetModule = Dir(JoinPath(loadPath, "*.bas"))
 
     While targetModule <> ""
-        Debug.Print targetModule
         If Not IsProtectedModule(targetModule) Then
+            If removeDuplicateModules Then
+                For Each vbComp In pVBAProject.VBComponents
+                    If LCase(vbComp.Name) & ".bas" = LCase(targetModule) Then
+                        pVBAProject.VBComponents.Remove vbComp
+                        Exit For
+                    End If
+                Next
+            End If
+            
             pVBAProject.VBComponents.Import JoinPath(loadPath, targetModule)
         End If
         
@@ -57,6 +71,16 @@ Public Sub ImportModules(ByVal moduleDirectory As String)
 
     While targetModule <> ""
         If Not IsProtectedModule(targetModule) And Not IsProtectedClassModule(targetModule) Then
+        
+            If removeDuplicateModules Then
+                For Each vbComp In pVBAProject.VBComponents
+                    If LCase(vbComp.Name) & ".cls" = LCase(targetModule) Then
+                        pVBAProject.VBComponents.Remove vbComp
+                        Exit For
+                    End If
+                Next
+            End If
+            
             pVBAProject.VBComponents.Import JoinPath(loadPath, targetModule)
         End If
         
@@ -64,7 +88,7 @@ Public Sub ImportModules(ByVal moduleDirectory As String)
     Wend
 
 End Sub
-Public Sub ExportModules(ByVal moduleDirectory As String, Optional ByVal protectedModuleDirectory, Optional ByVal removeModules As Boolean = True)
+Public Sub ExportModules(ByVal moduleDirectory As String, Optional ByVal protectedModuleDirectory, Optional ByVal removeModules As Boolean = False)
     Dim pVBAProject As VBProject
     Dim vbComp As VBComponent  'VBA module, form, etc...
     

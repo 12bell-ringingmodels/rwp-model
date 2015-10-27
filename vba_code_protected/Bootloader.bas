@@ -5,12 +5,16 @@ Public Function IsProtectedModule(ByVal moduleName As String) As Boolean
     
     lcaseName = LCase(moduleName)
     
-    If InStr(lcaseName, "bootloader") > 0 Then
-        IsProtectedModule = True
-    ElseIf InStr(lcaseName, "filetools") > 0 Then
-        IsProtectedModule = True
-    Else
+    If InStr(lcaseName, "test") = 1 Then
         IsProtectedModule = False
+    Else
+        If InStr(lcaseName, "bootloader") > 0 Then
+            IsProtectedModule = True
+        ElseIf InStr(lcaseName, "filetools") > 0 Then
+            IsProtectedModule = True
+        Else
+            IsProtectedModule = False
+        End If
     End If
 End Function
 
@@ -41,6 +45,7 @@ Public Sub ImportModules(ByVal moduleDirectory As String)
     targetModule = Dir(JoinPath(loadPath, "*.bas"))
 
     While targetModule <> ""
+        Debug.Print targetModule
         If Not IsProtectedModule(targetModule) Then
             pVBAProject.VBComponents.Import JoinPath(loadPath, targetModule)
         End If

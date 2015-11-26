@@ -264,7 +264,10 @@ Public Sub SelectSheets(TargetSheets() As String, Optional ByVal replace = False
 End Sub
 
 Public Sub SetupSinglePagePrint(sourceSheet As Worksheet, inputRange As Range, orientation As XlPageOrientation, Optional cHeader, Optional lHeader, Optional rHeader, Optional cFooter, Optional lFooter, Optional rFooter)
-    Application.PrintCommunication = False
+
+    If GetExcelVersion() >= ExcelVer_2010 Then
+        Application.PrintCommunication = False
+    End If
     
     If IsMissing(lHeader) Then lHeader = ""
     If IsMissing(rHeader) Then rHeader = ""
@@ -320,7 +323,9 @@ Public Sub SetupSinglePagePrint(sourceSheet As Worksheet, inputRange As Range, o
         .FirstPage.CenterFooter.Text = cFooter
         .FirstPage.RightFooter.Text = rFooter
     End With
-    Application.PrintCommunication = True
-
+    
+    If GetExcelVersion() >= ExcelVer_2010 Then
+        Application.PrintCommunication = True
+    End If
 End Sub
 

@@ -1486,163 +1486,33 @@ Next R
 RR.EntireColumn.ColumnWidth = MaxWidth
 
 
-'now insert the button for Histograms
-    x = Cells(22, 1).Left
-    y = Cells(22, 1).RowHeight * 22
-    H = Cells(22, 1).RowHeight
-    W = Cells(22, 1).Width - 1
-    ActiveSheet.Buttons.Add(x, y, W, H).Select
-    Selection.OnAction = "graph_histograms"
-'    ActiveSheet.Shapes("Button 2").Select
-    Selection.Characters.Text = "Error Histograms"
-    With Selection.Characters(Start:=1, Length:=10).Font
-        .Name = "Arial"
-        .FontStyle = "Regular"
-        .Size = 10
-        .Strikethrough = False
-        .Superscript = False
-        .Subscript = False
-        .OutlineFont = False
-        .Shadow = False
-        .Underline = xlUnderlineStyleNone
-        .ColorIndex = xlAutomatic
-    End With
+    AddMacroButton ButtonLabel:="Error Histograms", LinkedMacro:="graph_histograms", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(22, 1), RowHeightMultiplier:=1.5
+    AddMacroButton ButtonLabel:="WholePull SD graphs", LinkedMacro:="graph_wholepullsd", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(24, 1), RowHeightMultiplier:=1.5
+    AddMacroButton ButtonLabel:="Speed graphs", LinkedMacro:="graph_speed", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(26, 1), RowHeightMultiplier:=1.5
+    AddMacroButton ButtonLabel:="Bell Analysis", LinkedMacro:="bell_table", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(28, 1), RowHeightMultiplier:=1.5
+    AddMacroButton ButtonLabel:="Create Charts", LinkedMacro:="team_charts", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(30, 1), RowHeightMultiplier:=1.5
+    AddMacroButton ButtonLabel:="Touch Summary", LinkedMacro:="team_charts1", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(32, 1), RowHeightMultiplier:=1.5
+    AddMacroButton ButtonLabel:="Average Deviations", LinkedMacro:="average_deviations", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(34, 1), RowHeightMultiplier:=1.5
     
-'insert the button for wholepull sd graphs
-    x = Cells(22, 1).Left
-    y = Cells(22, 1).RowHeight * 23
-    H = Cells(22, 1).RowHeight
-    W = Cells(22, 1).Width - 1
-    ActiveSheet.Buttons.Add(x, y, W, H).Select
-    Selection.OnAction = "graph_wholepullsd"
-'    ActiveSheet.Shapes("Button 2").Select
-    Selection.Characters.Text = "WholePull SD graphs"
-    With Selection.Characters(Start:=1, Length:=10).Font
-        .Name = "Arial"
-        .FontStyle = "Regular"
-        .Size = 10
-        .Strikethrough = False
-        .Superscript = False
-        .Subscript = False
-        .OutlineFont = False
-        .Shadow = False
-        .Underline = xlUnderlineStyleNone
-        .ColorIndex = xlAutomatic
-    End With
     
- 'insert the button for speed graphs
-    x = Cells(22, 1).Left
-    y = Cells(22, 1).RowHeight * 24
-    H = Cells(22, 1).RowHeight
-    W = Cells(22, 1).Width - 1
-    ActiveSheet.Buttons.Add(x, y, W, H).Select
-    Selection.OnAction = "graph_speed"
-'    ActiveSheet.Shapes("Button 2").Select
-    Selection.Characters.Text = "Speed graphs"
-    With Selection.Characters(Start:=1, Length:=10).Font
-        .Name = "Arial"
-        .FontStyle = "Regular"
-        .Size = 10
-        .Strikethrough = False
-        .Superscript = False
-        .Subscript = False
-        .OutlineFont = False
-        .Shadow = False
-        .Underline = xlUnderlineStyleNone
-        .ColorIndex = xlAutomatic
-    End With
     
-  'insert the button for bell analysis
-    x = Cells(22, 1).Left
-    y = Cells(22, 1).RowHeight * 25
-    H = Cells(22, 1).RowHeight
-    W = Cells(22, 1).Width - 1
-    ActiveSheet.Buttons.Add(x, y, W, H).Select
-    Selection.OnAction = "bell_table"
-'    ActiveSheet.Shapes("Button 2").Select
-    Selection.Characters.Text = "Bell Analysis"
-    With Selection.Characters(Start:=1, Length:=10).Font
-        .Name = "Arial"
-        .FontStyle = "Regular"
-        .Size = 10
-        .Strikethrough = False
-        .Superscript = False
-        .Subscript = False
-        .OutlineFont = False
-        .Shadow = False
-        .Underline = xlUnderlineStyleNone
-        .ColorIndex = xlAutomatic
-    End With
-        
-    'insert the button for producing graphs
-    x = Cells(22, 1).Left
-    y = Cells(22, 1).RowHeight * 26
-    H = Cells(22, 1).RowHeight
-    W = Cells(22, 1).Width - 1
-    ActiveSheet.Buttons.Add(x, y, W, H).Select
-    Selection.OnAction = "team_charts"
-'    ActiveSheet.Shapes("Button 2").Select
-    Selection.Characters.Text = "Create Charts"
-    With Selection.Characters(Start:=1, Length:=10).Font
-        .Name = "Arial"
-        .FontStyle = "Regular"
-        .Size = 10
-        .Strikethrough = False
-        .Superscript = False
-        .Subscript = False
-        .OutlineFont = False
-        .Shadow = False
-        .Underline = xlUnderlineStyleNone
-        .ColorIndex = xlAutomatic
-    End With
-    
-    'insert the button for producing more graphs
-    x = Cells(22, 1).Left
-    y = Cells(22, 1).RowHeight * 27
-    H = Cells(22, 1).RowHeight
-    W = Cells(22, 1).Width - 1
-    ActiveSheet.Buttons.Add(x, y, W, H).Select
-    Selection.OnAction = "team_charts1"
-'    ActiveSheet.Shapes("Button 2").Select
-    Selection.Characters.Text = "Touch Summary"
-    With Selection.Characters(Start:=1, Length:=10).Font
-        .Name = "Arial"
-        .FontStyle = "Regular"
-        .Size = 10
-        .Strikethrough = False
-        .Superscript = False
-        .Subscript = False
-        .OutlineFont = False
-        .Shadow = False
-        .Underline = xlUnderlineStyleNone
-        .ColorIndex = xlAutomatic
-    End With
-    
-     'insert the button for the Average Deviations
-    x = Cells(22, 1).Left
-    y = Cells(22, 1).RowHeight * 30
-    H = Cells(22, 1).RowHeight
-    W = Cells(22, 1).Width - 1
-    ActiveSheet.Buttons.Add(x, y, W, H).Select
-    Selection.OnAction = "average_deviations"
-'    ActiveSheet.Shapes("Button 2").Select
-    Selection.Characters.Text = "Average Deviations"
-    With Selection.Characters(Start:=1, Length:=10).Font
-        .Name = "Arial"
-        .FontStyle = "Regular"
-        .Size = 10
-        .Strikethrough = False
-        .Superscript = False
-        .Subscript = False
-        .OutlineFont = False
-        .Shadow = False
-        .Underline = xlUnderlineStyleNone
-        .ColorIndex = xlAutomatic
-    End With
     
     Cells(1, 1).Select
     
 End Sub
+
+Sub AddMacroButton(ByVal ButtonLabel As String, ByVal LinkedMacro As String, TargetWorksheet As Worksheet, FitCell As Range, Optional RowHeightMultiplier)
+    Dim workingButton As Button
+    
+    If Not IsMissing(RowHeightMultiplier) Then
+        FitCell.RowHeight = RowHeightMultiplier * FitCell.RowHeight
+    End If
+    
+    Set workingButton = TargetWorksheet.Buttons.Add(FitCell.Left, FitCell.Top, FitCell.Width, FitCell.RowHeight)
+    workingButton.Characters.Text = ButtonLabel
+    workingButton.OnAction = LinkedMacro
+End Sub
+
 Sub graph_histograms()
 Dim teamcol As Integer
 Dim span As Integer

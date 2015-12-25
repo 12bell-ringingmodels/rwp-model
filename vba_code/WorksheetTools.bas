@@ -45,6 +45,8 @@ Public Sub ResetForCommit()
     Call ResetSettingsSheetToDefault
 
     Call DeleteWorkingSheets
+    
+    FrontSheet.Cells(1, 1).Select
 End Sub
 
 

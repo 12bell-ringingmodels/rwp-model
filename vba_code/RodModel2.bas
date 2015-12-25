@@ -1494,8 +1494,7 @@ RR.EntireColumn.ColumnWidth = MaxWidth
     AddMacroButton ButtonLabel:="Touch Summary", LinkedMacro:="team_charts1", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(32, 1), RowHeightMultiplier:=1.5
     AddMacroButton ButtonLabel:="Average Deviations", LinkedMacro:="average_deviations", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(34, 1), RowHeightMultiplier:=1.5
     
-    
-    
+    AddMacroButton ButtonLabel:="Write Toast", LinkedMacro:="Gen_XML", TargetWorksheet:=SummaryWorksheet, FitCell:=Cells(36, 1), RowHeightMultiplier:=1.5
     
     Cells(1, 1).Select
     

@@ -7,7 +7,7 @@ Private Function ToastXML_CreateDatasourceElement(toastDOM As MSXML2.DOMDocument
     Dim workingElement As IXMLDOMElement
     Dim returnElement As IXMLDOMElement
     
-    Set returnElement = toastDOM.createElement("datasource")
+    Set returnElement = toastDOM.createElement("dataSource")
     Set workingElement = toastDOM.createElement("name")
     workingElement.Text = TOAST_RWP_SOURCE
     returnElement.appendChild workingElement
@@ -33,32 +33,71 @@ Private Function ToastXML_CreateStrikeData(ByVal teamIndex As Integer, toastDOM 
     Set returnElement = toastDOM.createElement("strikeData")
     
     Dim rowIndex As Integer
+    Dim rowWithinTouch As Integer
     Dim bellIndex As Integer
+    Dim isWithinTouch As Boolean
     
+    Dim teamRWP2sheet As Worksheet
     
-    For rowIndex = 1 To NumRows(teamIndex)
-        If (rowIndex >= AnalStart(teamIndex)) And (rowIndex <= AnalEnd(teamIndex)) Then
-            Set workingElement = toastDOM.createElement("rowDelimiter")
-            Set workingAttribute = toastDOM.createAttribute("source")
-            workingAttribute.nodeValue = TOAST_RWP_SOURCE
-            workingElement.setAttributeNode workingAttribute
-            
-            returnElement.appendChild workingElement
-        End If
+    Set teamRWP2sheet = getTeamModelSheet2(teamIndex)
+    
+    If teamRWP2sheet Is Nothing Then
+        MsgBox "I'm not sure what has happened, but there is no model data to output in XML format. Output will be blank"
+    Else
+        For rowIndex = 1 To NumRows(teamIndex)
         
-        For bellIndex = 1 To NumBells(teamIndex)
-            Set strikeElement = toastDOM.createElement("strike")
-            Set workingElement = toastDOM.createElement("bell")
-            workingElement.Text = LoadTime(teamIndex, bellIndex, rowIndex).bell
-            strikeElement.appendChild workingElement
-            Set workingElement = toastDOM.createElement("original")
-            workingElement.Text = 0.001 * (LoadTime(teamIndex, bellIndex, rowIndex).time)
-            strikeElement.appendChild workingElement
+            If (rowIndex >= StartAnalysis(teamIndex)) And (rowIndex <= EndAnalysis(teamIndex)) Then
+                Set workingElement = toastDOM.createElement("rowDelimiter")
+                Set workingAttribute = toastDOM.createAttribute("source")
+                workingAttribute.nodeValue = TOAST_RWP_SOURCE
+                workingElement.setAttributeNode workingAttribute
+                
+                rowWithinTouch = rowIndex - StartAnalysis(teamIndex)
+                
+                returnElement.appendChild workingElement
+                isWithinTouch = True
+            Else
+                isWithinTouch = False
+            End If
             
-            
-            returnElement.appendChild strikeElement
+            For bellIndex = 1 To NumBells(teamIndex)
+                Set strikeElement = toastDOM.createElement("strike")
+                Set workingElement = toastDOM.createElement("bell")
+                workingElement.Text = LoadTime(teamIndex, bellIndex, rowIndex).bell
+                strikeElement.appendChild workingElement
+                Set workingElement = toastDOM.createElement("original")
+                workingElement.Text = 0.001 * (LoadTime(teamIndex, bellIndex, rowIndex).time)
+                strikeElement.appendChild workingElement
+                
+                If isWithinTouch Then
+                    Dim wholePull As Integer
+                    Dim columnOffset As Integer
+                    
+                    Dim idealTime As Double
+                    
+                    Dim modelOutputElement As IXMLDOMElement
+                    
+                    Set modelOutputElement = toastDOM.createElement("modelOutput")
+                    Set workingAttribute = toastDOM.createAttribute("source")
+                    workingAttribute.nodeValue = TOAST_RWP_SOURCE
+                    modelOutputElement.setAttributeNode workingAttribute
+                    
+                    wholePull = rowWithinTouch / 2
+                    columnOffset = (rowWithinTouch Mod 2) * NumBells(teamIndex)
+                    
+                    idealTime = LoadTime(teamIndex, bellIndex, rowIndex).time - teamRWP2sheet.Range("RWPOutputByBell").Offset(wholePull, bellIndex - 1 + columnOffset).Value
+                    
+                    Set workingElement = toastDOM.createElement("time")
+                    workingElement.Text = Format(idealTime / 1000, "0.000")
+                    modelOutputElement.appendChild workingElement
+                    
+                    strikeElement.appendChild modelOutputElement
+                End If
+                
+                returnElement.appendChild strikeElement
+            Next
         Next
-    Next
+    End If
     
     
    Set ToastXML_CreateStrikeData = returnElement
@@ -102,14 +141,8 @@ Public Sub Gen_XML()
         If IsTeamProcessed(index_teams) Then
             xml_filename = Application.GetSaveAsFilename(TeamName(index_teams) & ".xml", "XML Files,*.xml", 1, "Select the output XML name for Team " & index_teams)
             If Not IsNumeric(xml_filename) Then
-                
+                WriteTeamToastXML index_teams, xml_filename
             End If
         End If
     Next
-        
-    xml_filename = Application.GetSaveAsFilename(TeamName(1) & ".xml", "XML Files,*.xml", 1, "Select the output XML name")
-    If IsNumeric(xml_filename) Then
-        Exit Sub
-    End If
-    
 End Sub

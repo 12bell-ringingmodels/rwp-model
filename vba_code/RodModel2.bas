@@ -12,8 +12,8 @@ Type Strike
   time As Long
 End Type
 Public strikefile(MAXIMUM_TEAMS) As String
-Public LoadTime(10, 16, 6000) As Strike
-Public Wholepulls(10, 32, 3000) As Strike
+Public LoadTime(MAXIMUM_TEAMS, MAXIMUM_BELLS, 6000) As Strike
+Public Wholepulls(MAXIMUM_TEAMS, 2 * MAXIMUM_BELLS, 3000) As Strike
 'Public CorrectTime(16, 6000) As Strike
 'Public OutputArray(96000) As Strike
 Public BellPres(10, 16) As Boolean
@@ -41,8 +41,8 @@ Public Errors1(10, 2, 16) As Double
 Public Error50(10, 2, 16) As Integer
 Public Error501(10, 2, 16) As Integer
 Public Ratio(10, 16) As Double
-Public AnalStart(10) As Integer
-Public AnalEnd(10) As Integer
+Public StartAnalysis(10) As Integer
+Public EndAnalysis(10) As Integer
 Public touchfile As String
 Public touchblow(100000) As String
 Public touchrung(10, 100000) As String
@@ -57,13 +57,50 @@ Public AverageBellGap As Integer
 Public Strikes As Integer
 
 Public Function TotalTeams() As Integer
+    Dim countTeams As Integer
+    Dim i As Integer
+
     countTeams = 0
-    For i% = 1 To MAXIMUM_TEAMS
-        If IsTeamProcessed(i%) Then
+    For i = 1 To MAXIMUM_TEAMS
+        If IsTeamProcessed(i) Then
             countTeams = countTeams + 1
         End If
     Next
     TotalTeams = countTeams
+End Function
+
+
+Public Function getTeamModelSheet1(ByVal teamIndex As Integer, Optional createIfNotExist As Boolean = False, Optional programmaticLabel) As Worksheet
+
+    If Not IsTeamProcessed(teamIndex) Then
+        Set getTeamModelSheet1 = Nothing
+    Else
+    
+        Dim sheetName As String
+        sheetName = TeamName(teamIndex) + " 1"
+        
+        If IsMissing(programmaticLabel) Then
+            Set getTeamModelSheet1 = FindWorksheet(sheetName:=sheetName, createIfNotExist:=createIfNotExist)
+        Else
+            Set getTeamModelSheet1 = FindWorksheet(sheetName:=sheetName, createIfNotExist:=createIfNotExist, programmaticLabel:=programmaticLabel)
+        End If
+    End If
+End Function
+Public Function getTeamModelSheet2(ByVal teamIndex As Integer, Optional createIfNotExist As Boolean = False, Optional programmaticLabel) As Worksheet
+
+    If Not IsTeamProcessed(teamIndex) Then
+        Set getTeamModelSheet2 = Nothing
+    Else
+    
+        Dim sheetName As String
+        sheetName = TeamName(teamIndex) + " 2"
+        
+        If IsMissing(programmaticLabel) Then
+            Set getTeamModelSheet2 = FindWorksheet(sheetName:=sheetName, createIfNotExist:=createIfNotExist)
+        Else
+            Set getTeamModelSheet2 = FindWorksheet(sheetName:=sheetName, createIfNotExist:=createIfNotExist, programmaticLabel:=programmaticLabel)
+        End If
+    End If
 End Function
 
 Public Function IsTeamProcessed(ByVal i As Integer) As Boolean
@@ -81,15 +118,15 @@ End Function
 
 'TODO: Remove alpha dependence - should be possible to manage through range references
 Function alpha(ByVal colno As Integer) As String
-  If colno < 27 Then
-    alpha = Mid("ABCDEFGHIJKLMNOPQRSTUVWXYZ", colno, 1)
-  Else
-    alpha = Mid("AAABACADAEAFAGAHAIAJAKALAMANAOAPAQARASATAUAVAWAXAYAZBABBBCBDBEBFBGBHBIBJBKBLBMBNBOBPBQBRBSBTBUBVBWBXBYBZCACBCCCDCECFCGCHCICJCKCLCMCNCOCPCQCRCSCTCUCVCWCXCYCZ", ((colno - 26) * 2) - 1, 2)
-  End If
+    If colno < 27 Then
+        alpha = Mid("ABCDEFGHIJKLMNOPQRSTUVWXYZ", colno, 1)
+    Else
+        alpha = Mid("AAABACADAEAFAGAHAIAJAKALAMANAOAPAQARASATAUAVAWAXAYAZBABBBCBDBEBFBGBHBIBJBKBLBMBNBOBPBQBRBSBTBUBVBWBXBYBZCACBCCCDCECFCGCHCICJCKCLCMCNCOCPCQCRCSCTCUCVCWCXCYCZ", ((colno - 26) * 2) - 1, 2)
+    End If
 End Function
 'TODO: Remove retstr - shouldn't really be required
 Function retstr(ByVal x As Integer) As String
-  retstr = Mid(Str(x), 2, 9999)
+    retstr = Mid(Str(x), 2, 9999)
 End Function
 Function bell_chartonum(ByVal bellch As String) As Integer
     i = InStr("1234567890ETABCD", bellch)
@@ -136,6 +173,10 @@ Erase Error501
 
 Dim FrontSheet As Worksheet
 Dim settingsSheet As Worksheet
+
+Dim teamRWPSheet1 As Worksheet
+Dim teamRWPSheet2 As Worksheet
+
 Set FrontSheet = Sheets(FRONT_SHEET_NAME)
 Set settingsSheet = Sheets(SETTINGS_SHEET_NAME)
 
@@ -144,6 +185,7 @@ strikeBaseDir = FrontSheet.Range("strikeBaseDir").Value
 
 'get filenames from FRONT sheet
 For i = 4 To 13
+
     strikefile(i - 3) = CvtToAbsFile(JoinPath(strikeBaseDir, FrontSheet.Cells(i, 3)))
     TeamName(i - 3) = FrontSheet.Cells(i, 2)
     soundfile(i - 3) = CvtToAbsFile(FrontSheet.Cells(i, 5))
@@ -151,16 +193,17 @@ For i = 4 To 13
     
     
     'lets see if the model has been run or not
-    HasRun = False
-    For Each ws In Worksheets
-        If ws.Name = TeamName(i - 3) + " 2" Then HasRun = True
-    Next ws
+    
+    Set teamRWPSheet1 = getTeamModelSheet1(i - 3)
+    Set teamRWPSheet2 = getTeamModelSheet2(i - 3)
+    HasRun = Not (teamRWPSheet2 Is Nothing)
+    
     
     'if it has run then scan the team sheets to populate numwholepulls and numbells
     If HasRun Then
        'find numwholepulls
        For j = 1 To 20000
-         If Worksheets(TeamName(i - 3) + " 2").Cells(j, 1) = "MEAN" Then Exit For
+         If teamRWPSheet2.Cells(j, 1) = "MEAN" Then Exit For
        Next j
        NumWholepulls(i - 3) = j - 3
        MeanPos(i - 3) = j
@@ -169,7 +212,7 @@ For i = 4 To 13
        
        'find numbells
        For j = 1 To 40
-         If Worksheets(TeamName(i - 3) + " 2").Cells(4, j) = "" Then Exit For
+         If teamRWPSheet2.Cells(4, j) = "" Then Exit For
        Next j
        NumBells(i - 3) = (j - 2) / 2
        
@@ -177,57 +220,57 @@ For i = 4 To 13
        
        
         For j = 1 To NumBells(i - 3)
-        Mean(i - 3, 1, j) = Worksheets(TeamName(i - 3) + " 2").Cells(MeanPos(i - 3), 4 * NumBells(i - 3) + 6 + j)
-        Mean(i - 3, 2, j) = Worksheets(TeamName(i - 3) + " 2").Cells(MeanPos(i - 3), 5 * NumBells(i - 3) + 6 + j)
-        Mean1(i - 3, 1, j) = Worksheets(TeamName(i - 3) + " 2").Cells(MeanPos(i - 3), 1 + j)
-        Mean1(i - 3, 2, j) = Worksheets(TeamName(i - 3) + " 2").Cells(MeanPos(i - 3), NumBells(i - 3) + 1 + j)
+        Mean(i - 3, 1, j) = teamRWPSheet2.Cells(MeanPos(i - 3), 4 * NumBells(i - 3) + 6 + j)
+        Mean(i - 3, 2, j) = teamRWPSheet2.Cells(MeanPos(i - 3), 5 * NumBells(i - 3) + 6 + j)
+        Mean1(i - 3, 1, j) = teamRWPSheet2.Cells(MeanPos(i - 3), 1 + j)
+        Mean1(i - 3, 2, j) = teamRWPSheet2.Cells(MeanPos(i - 3), NumBells(i - 3) + 1 + j)
         Next j
         
         For j = 1 To NumBells(i - 3)
-        SD(i - 3, 1, j) = Worksheets(TeamName(i - 3) + " 2").Cells(SDPos(i - 3), 4 * NumBells(i - 3) + 6 + j)
-        SD(i - 3, 2, j) = Worksheets(TeamName(i - 3) + " 2").Cells(SDPos(i - 3), 5 * NumBells(i - 3) + 6 + j)
-        SD1(i - 3, 1, j) = Worksheets(TeamName(i - 3) + " 2").Cells(SDPos(i - 3), 1 + j)
-        SD1(i - 3, 2, j) = Worksheets(TeamName(i - 3) + " 2").Cells(SDPos(i - 3), NumBells(i - 3) + 1 + j)
+        SD(i - 3, 1, j) = teamRWPSheet2.Cells(SDPos(i - 3), 4 * NumBells(i - 3) + 6 + j)
+        SD(i - 3, 2, j) = teamRWPSheet2.Cells(SDPos(i - 3), 5 * NumBells(i - 3) + 6 + j)
+        SD1(i - 3, 1, j) = teamRWPSheet2.Cells(SDPos(i - 3), 1 + j)
+        SD1(i - 3, 2, j) = teamRWPSheet2.Cells(SDPos(i - 3), NumBells(i - 3) + 1 + j)
         Next j
         
         For j = 1 To NumBells(i - 3)
-        Errors(i - 3, 1, j) = Worksheets(TeamName(i - 3) + " 2").Cells(ErrorPos(i - 3), 4 * NumBells(i - 3) + 6 + j)
-        Errors(i - 3, 2, j) = Worksheets(TeamName(i - 3) + " 2").Cells(ErrorPos(i - 3), 5 * NumBells(i - 3) + 6 + j)
-        Errors1(i - 3, 1, j) = Worksheets(TeamName(i - 3) + " 2").Cells(ErrorPos(i - 3), 1 + j)
-        Errors1(i - 3, 2, j) = Worksheets(TeamName(i - 3) + " 2").Cells(ErrorPos(i - 3), NumBells(i - 3) + 1 + j)
+        Errors(i - 3, 1, j) = teamRWPSheet2.Cells(ErrorPos(i - 3), 4 * NumBells(i - 3) + 6 + j)
+        Errors(i - 3, 2, j) = teamRWPSheet2.Cells(ErrorPos(i - 3), 5 * NumBells(i - 3) + 6 + j)
+        Errors1(i - 3, 1, j) = teamRWPSheet2.Cells(ErrorPos(i - 3), 1 + j)
+        Errors1(i - 3, 2, j) = teamRWPSheet2.Cells(ErrorPos(i - 3), NumBells(i - 3) + 1 + j)
         Next j
         
-        avgeInterval = Worksheets(TeamName(i - 3) + " 1").Cells(NumWholepulls(i - 3) + 5, 27)
+        avgeInterval = teamRWPSheet1.Cells(NumWholepulls(i - 3) + 5, 27)
         faultThreshold(i - 3) = settingsSheet.Range("optAnalysisFaultPct").Value * avgeInterval
         
         For j = 1 To NumWholepulls(i - 3)
             For k = 1 To NumBells(i - 3)
                 
-                If Worksheets(TeamName(i - 3) + " 2").Cells(j + 3, 4 * NumBells(i - 3) + 6 + k) < -faultThreshold(i - 3) Then
+                If teamRWPSheet2.Cells(j + 3, 4 * NumBells(i - 3) + 6 + k) < -faultThreshold(i - 3) Then
                 Error50(i - 3, 1, k) = Error50(i - 3, 1, k) + 1
                 End If
-                If Worksheets(TeamName(i - 3) + " 2").Cells(j + 3, 1 + k) < -faultThreshold(i - 3) Then
+                If teamRWPSheet2.Cells(j + 3, 1 + k) < -faultThreshold(i - 3) Then
                 Error501(i - 3, 1, k) = Error501(i - 3, 1, k) + 1
                 End If
             
-                If Worksheets(TeamName(i - 3) + " 2").Cells(j + 3, 5 * NumBells(i - 3) + 6 + k) < -faultThreshold(i - 3) Then
+                If teamRWPSheet2.Cells(j + 3, 5 * NumBells(i - 3) + 6 + k) < -faultThreshold(i - 3) Then
                 Error50(i - 3, 1, k) = Error50(i - 3, 1, k) + 1
                 End If
-                If Worksheets(TeamName(i - 3) + " 2").Cells(j + 3, NumBells(i - 3) + 1 + k) < -faultThreshold(i - 3) Then
+                If teamRWPSheet2.Cells(j + 3, NumBells(i - 3) + 1 + k) < -faultThreshold(i - 3) Then
                 Error501(i - 3, 1, k) = Error501(i - 3, 1, k) + 1
                 End If
                 
-                If Worksheets(TeamName(i - 3) + " 2").Cells(j + 3, 4 * NumBells(i - 3) + 6 + k) > faultThreshold(i - 3) Then
+                If teamRWPSheet2.Cells(j + 3, 4 * NumBells(i - 3) + 6 + k) > faultThreshold(i - 3) Then
                 Error50(i - 3, 2, k) = Error50(i - 3, 2, k) + 1
                 End If
-                If Worksheets(TeamName(i - 3) + " 2").Cells(j + 3, 1 + k) > faultThreshold(i - 3) Then
+                If teamRWPSheet2.Cells(j + 3, 1 + k) > faultThreshold(i - 3) Then
                 Error501(i - 3, 2, k) = Error501(i - 3, 2, k) + 1
                 End If
             
-                If Worksheets(TeamName(i - 3) + " 2").Cells(j + 3, 5 * NumBells(i - 3) + 6 + k) > faultThreshold(i - 3) Then
+                If teamRWPSheet2.Cells(j + 3, 5 * NumBells(i - 3) + 6 + k) > faultThreshold(i - 3) Then
                 Error50(i - 3, 2, k) = Error50(i - 3, 2, k) + 1
                 End If
-                If Worksheets(TeamName(i - 3) + " 2").Cells(j + 3, NumBells(i - 3) + 1 + k) > faultThreshold(i - 3) Then
+                If teamRWPSheet2.Cells(j + 3, NumBells(i - 3) + 1 + k) > faultThreshold(i - 3) Then
                 Error501(i - 3, 2, k) = Error501(i - 3, 2, k) + 1
                 End If
                 
@@ -299,6 +342,9 @@ Dim wasSuspended As Boolean
 
 Dim ws As Worksheet
 
+Dim topLevelProfiler As CProfiler
+
+
 CR = Chr(13)
 LF = Chr(10)
 
@@ -310,8 +356,16 @@ wasSuspended = False
 
 Call DeleteWorkingSheets
 
+Set topLevelProfiler = New CProfiler
+
+topLevelProfiler.StartProfiling "RWP"
+
+topLevelProfiler.Tock "PrepSheets"
+
 
 Call loadvars
+topLevelProfiler.Tock "LoadVars"
+
 
 'reset variables
 timeloop = 0
@@ -447,6 +501,8 @@ pres = False
 oldStatusBar = Application.DisplayStatusBar
 Application.DisplayStatusBar = True
 
+topLevelProfiler.Tock "ModelRun"
+
 For i = 1 To 10
   If IsTeamProcessed(i) Then
     pres = True
@@ -461,6 +517,8 @@ For i = 1 To 10
     ScreenRefresh
   End If
 Next i
+
+topLevelProfiler.Tock "ModelFinish"
 
 RemoveProgrammaticSheetsCreatedBy RWP_WORKING_SHEETS
 
@@ -487,6 +545,10 @@ End If
 ' Resume redraw and calculation
 ResumeCalculationAndRedraw wasSuspended
 
+
+topLevelProfiler.EndProfiling displayChart:=False
+
+
 End Sub
 
 
@@ -500,11 +562,11 @@ For j = 1 To NumRows(i)
   Next k
   If outofpos > 3 Then
     If Worksheets("Settings").Range("optAnalysisOpeningRounds").Value = True Then
-      AnalStart(i) = 1
+      StartAnalysis(i) = 1
     Else
-      AnalStart(i) = j - 2
+      StartAnalysis(i) = j - 2
     End If
-    AnalEnd(i) = j + TouchLength + 1
+    EndAnalysis(i) = j + TouchLength + 1
     Exit Sub
   End If
 Next j
@@ -642,24 +704,21 @@ Dim lowesttime As Long
 Dim belldone(16) As Boolean
 Dim i As Integer
 
+Dim workingSheet As Worksheet
+
 optr = ypos
 k = xpos
 
-'temporary set
-'AnalStart(team) = 1
-'AnalEnd(team) = NumRows(team)
-'end of temp
 
-Sheets.Add After:=Sheets(Sheets.Count)
-ActiveSheet.Name = TeamName(team) + nam
+Set workingSheet = getTeamModelSheet1(team)
 
 
-For i = AnalStart(team) To AnalEnd(team)
+For i = StartAnalysis(team) To EndAnalysis(team)
   Call order(inparray, team, i)
   For j = 1 To 16
     'MsgBox ("Check " + Str(j))
     If TimeOrder(j) = 0 Then Exit For
-    Sheets(TeamName(team) + nam).Cells(optr, k) = TimeOrder(j)
+    workingSheet.Cells(optr, k) = TimeOrder(j)
     k = k + 1
     If k > (xpos - 1) + NumBells(team) * 2 Then
       k = xpos
@@ -679,26 +738,34 @@ Dim bell2 As Integer
 Dim quickval As Integer
 Dim slowval As Integer
 
+
+Const RWP1_ID = "RWP1"
+
 Dim settingsSheet As Worksheet
 Set settingsSheet = Sheets(SETTINGS_SHEET_NAME)
+
+
+Dim teamRWPSheet1 As Worksheet
+Set teamRWPSheet1 = getTeamModelSheet1(team, createIfNotExist:=True, programmaticLabel:=RWP1_ID)
+
 
 Call dispwholepulls(LoadTime, team, " 1", 2, 3)
 
 'add the headers over the wholepulls
 For i = 1 To NumBells(team)
-  Worksheets(TeamName(team) + " 1").Cells(1, i + 1) = i
-  Worksheets(TeamName(team) + " 1").Cells(1, i + 1).Interior.ColorIndex = 4
-  Worksheets(TeamName(team) + " 1").Cells(1, NumBells(team) + i + 1) = i
-  Worksheets(TeamName(team) + " 1").Cells(1, NumBells(team) + i + 1).Interior.ColorIndex = 15
+  teamRWPSheet1.Cells(1, i + 1) = i
+  teamRWPSheet1.Cells(1, i + 1).Interior.ColorIndex = 4
+  teamRWPSheet1.Cells(1, NumBells(team) + i + 1) = i
+  teamRWPSheet1.Cells(1, NumBells(team) + i + 1).Interior.ColorIndex = 15
   
-  Worksheets(TeamName(team) + " 1").Cells(2, i + 1) = i
-  Worksheets(TeamName(team) + " 1").Cells(2, NumBells(team) + i + 1) = i + NumBells(team)
+  teamRWPSheet1.Cells(2, i + 1) = i
+  teamRWPSheet1.Cells(2, NumBells(team) + i + 1) = i + NumBells(team)
 Next i
 
 'add the whole pull numbers
 For i = 3 To NumRows(team)
-  If Worksheets(TeamName(team) + " 1").Cells(i, 2) = "" Then Exit For
-  Worksheets(TeamName(team) + " 1").Cells(i, 1) = i - 2
+  If teamRWPSheet1.Cells(i, 2) = "" Then Exit For
+  teamRWPSheet1.Cells(i, 1) = i - 2
 Next i
 
 'set the number of whole pulls
@@ -706,40 +773,40 @@ NumWholepulls(team) = i - 3
 'MsgBox ("setting numwholepulls for team : " + Str(team) + " to : " + Str(NumWholepulls(team)) + " numrows : " + Str(NumRows(team)))
 
 'repeat the handstroke lead in a new column at the end
-Worksheets(TeamName(team) + " 1").Cells(1, (NumBells(team) * 2) + 2) = "1H"
+teamRWPSheet1.Cells(1, (NumBells(team) * 2) + 2) = "1H"
 For i = 3 To NumRows(team) + 1
-  Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 2) = Worksheets(TeamName(team) + " 1").Cells((i + 1), 2)
+  teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 2) = teamRWPSheet1.Cells((i + 1), 2)
 Next i
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 4, (NumBells(team) * 2) + 2) = "=AVERAGE(" + alpha((NumBells(team) * 2) + 2) + "4:" + alpha((NumBells(team) * 2) + 2) + retstr(NumWholepulls(team) + 1) + ")"
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 2) = "=" + alpha((NumBells(team) * 2) + 2) + retstr(NumWholepulls(team) + 4) + "-" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 4)
+teamRWPSheet1.Cells(NumWholepulls(team) + 4, (NumBells(team) * 2) + 2) = "=AVERAGE(" + alpha((NumBells(team) * 2) + 2) + "4:" + alpha((NumBells(team) * 2) + 2) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 2) = "=" + alpha((NumBells(team) * 2) + 2) + retstr(NumWholepulls(team) + 4) + "-" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 4)
 
 If GetHandstrokeGapMode() = Averages Then
     'calculate the averages
     For i = 2 To ((NumBells(team) * 2) + 1)
-      Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 4, i) = "=AVERAGE(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+      teamRWPSheet1.Cells(NumWholepulls(team) + 4, i) = "=AVERAGE(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
       If i > 2 Then
-        Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, i) = "=" + alpha(i) + retstr(NumWholepulls(team) + 4) + "-" + alpha(i - 1) + retstr(NumWholepulls(team) + 4)
+        teamRWPSheet1.Cells(NumWholepulls(team) + 5, i) = "=" + alpha(i) + retstr(NumWholepulls(team) + 4) + "-" + alpha(i - 1) + retstr(NumWholepulls(team) + 4)
       End If
     Next i
     
     'calculate the mean
     x = (NumBells(team) * 2) + 3
-    Worksheets(TeamName(team) + " 1").Cells(1, x) = "MEAN"
+    teamRWPSheet1.Cells(1, x) = "MEAN"
     Range(alpha(x + 1) + "1:" + alpha(x + 1) + "2").Merge
     Range(alpha(x + 1) + "1:" + alpha(x + 1) + "2").WrapText = True
-    Worksheets(TeamName(team) + " 1").Cells(1, x + 1) = "WP AVERAGE"
+    teamRWPSheet1.Cells(1, x + 1) = "WP AVERAGE"
     For i = 3 To NumWholepulls(team) + 2
-      Worksheets(TeamName(team) + " 1").Cells(i, x) = "=AVERAGE(" + alpha(2) + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ")"
+      teamRWPSheet1.Cells(i, x) = "=AVERAGE(" + alpha(2) + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ")"
       If i > 3 And i < (NumWholepulls(team) + 2) Then
-        Worksheets(TeamName(team) + " 1").Cells(i, x + 1) = "=(" + alpha(x) + retstr(i + 1) + "-" + alpha(x) + retstr(i - 1) + ")/2"
+        teamRWPSheet1.Cells(i, x + 1) = "=(" + alpha(x) + retstr(i + 1) + "-" + alpha(x) + retstr(i - 1) + ")/2"
       End If
     Next i
     
     'calculate the average gap overall
-    Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 3) = "=AVERAGE(C" + retstr(NumWholepulls(team) + 5) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 5) + ")"
+    teamRWPSheet1.Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 3) = "=AVERAGE(C" + retstr(NumWholepulls(team) + 5) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 5) + ")"
     
     'calculate the ratio of the handstroke gap
-    Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 4) = "=" + alpha((NumBells(team) * 2) + 2) + retstr(NumWholepulls(team) + 5) + "/" + alpha((NumBells(team) * 2) + 3) + retstr(NumWholepulls(team) + 5)
+    teamRWPSheet1.Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 4) = "=" + alpha((NumBells(team) * 2) + 2) + retstr(NumWholepulls(team) + 5) + "/" + alpha((NumBells(team) * 2) + 3) + retstr(NumWholepulls(team) + 5)
 
 ElseIf GetHandstrokeGapMode() = MinimumSquaredError Then
 
@@ -754,11 +821,11 @@ ElseIf GetHandstrokeGapMode() = MinimumSquaredError Then
     Dim meanWholepullCentre As Range
 
 
-    Set positionAvgs = Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 4, 2)
+    Set positionAvgs = teamRWPSheet1.Cells(NumWholepulls(team) + 4, 2)
     Set positionDiffs = positionAvgs.Offset(1, 0)
     
-    Set firstWholepull = Worksheets(TeamName(team) + " 1").Cells(4, 2)
-    Set lastWholepull = Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 1, 2)
+    Set firstWholepull = teamRWPSheet1.Cells(4, 2)
+    Set lastWholepull = teamRWPSheet1.Cells(NumWholepulls(team) + 1, 2)
     
     'calculate the averages
     For i = 1 To (NumBells(team) * 2) + 1
@@ -814,11 +881,11 @@ ElseIf GetHandstrokeGapMode() = MinimumSquaredError Then
     
     Dim wholePullCentrePoint As Range
     
-    Set wholePullCentrePoint = Worksheets(TeamName(team) + " 1").Cells(1, (NumBells(team) * 2) + 3)
+    Set wholePullCentrePoint = teamRWPSheet1.Cells(1, (NumBells(team) * 2) + 3)
     
     'calculate the ratio of the handstroke gap
     Dim handstrokeRatio As Range
-    Set handstrokeRatio = Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 4)
+    Set handstrokeRatio = teamRWPSheet1.Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 4)
     handstrokeRatio = "=(" & positionAvgs.Offset(0, 2 * NumBells(team)).Address & "-" & idealAverageLastBlow.Address & ")/" & averageInterbellGap.Address
     
     'calculate the mean
@@ -827,11 +894,11 @@ ElseIf GetHandstrokeGapMode() = MinimumSquaredError Then
     wholePullCentrePoint = "MEAN"
     Range(alpha(x + 1) + "1:" + alpha(x + 1) + "2").Merge
     Range(alpha(x + 1) + "1:" + alpha(x + 1) + "2").WrapText = True
-    Worksheets(TeamName(team) + " 1").Cells(1, x + 1) = "WP AVERAGE"
+    teamRWPSheet1.Cells(1, x + 1) = "WP AVERAGE"
     For i = 3 To NumWholepulls(team) + 2
-      Worksheets(TeamName(team) + " 1").Cells(i, x) = "=AVERAGE(" + alpha(2) + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ")"
+      teamRWPSheet1.Cells(i, x) = "=AVERAGE(" + alpha(2) + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ")"
       If i > 3 And i < (NumWholepulls(team) + 2) Then
-        Worksheets(TeamName(team) + " 1").Cells(i, x + 1) = "=(" + alpha(x) + retstr(i + 1) + "-" + alpha(x) + retstr(i - 1) + ")/2"
+        teamRWPSheet1.Cells(i, x + 1) = "=(" + alpha(x) + retstr(i + 1) + "-" + alpha(x) + retstr(i - 1) + ")/2"
       End If
     Next i
 
@@ -844,39 +911,39 @@ Else
 End If
 
 'calculate the intervals
-Worksheets(TeamName(team) + " 1").Cells(1, (NumBells(team) * 2) + 5) = "INTERVAL"
+teamRWPSheet1.Cells(1, (NumBells(team) * 2) + 5) = "INTERVAL"
 For i = 4 To NumWholepulls(team) + 1
-  Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5) = "=" + alpha((NumBells(team) * 2) + 4) + retstr(i) + "/(" + retstr((NumBells(team) * 2) - 1) + "+" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 5) + ")"
+  teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5) = "=" + alpha((NumBells(team) * 2) + 4) + retstr(i) + "/(" + retstr((NumBells(team) * 2) - 1) + "+" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 5) + ")"
 Next i
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 4, ((NumBells(team) * 2) + 5)) = "=MIN(" + alpha((NumBells(team) * 2) + 5) + "4:" + alpha((NumBells(team) * 2) + 5) + retstr(NumWholepulls(team) + 1) + ")"
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, ((NumBells(team) * 2) + 5)) = "=MAX(" + alpha((NumBells(team) * 2) + 5) + "4:" + alpha((NumBells(team) * 2) + 5) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 4, ((NumBells(team) * 2) + 5)) = "=MIN(" + alpha((NumBells(team) * 2) + 5) + "4:" + alpha((NumBells(team) * 2) + 5) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 5, ((NumBells(team) * 2) + 5)) = "=MAX(" + alpha((NumBells(team) * 2) + 5) + "4:" + alpha((NumBells(team) * 2) + 5) + retstr(NumWholepulls(team) + 1) + ")"
 
 'calculate alternate row length and difference
 x = (NumBells(team) * 2) + 6
 Range(alpha(x) + "1:" + alpha(x) + "2").Merge
 Range(alpha(x) + "1:" + alpha(x) + "2").WrapText = True
-Worksheets(TeamName(team) + " 1").Cells(1, x) = "WP ACTUAL"
+teamRWPSheet1.Cells(1, x) = "WP ACTUAL"
 For i = 4 To NumWholepulls(team) + 1
-  Worksheets(TeamName(team) + " 1").Cells(i, x) = "=" + alpha(x - 3) + retstr(i) + "-" + alpha(x - 3) + retstr(i - 1)
+  teamRWPSheet1.Cells(i, x) = "=" + alpha(x - 3) + retstr(i) + "-" + alpha(x - 3) + retstr(i - 1)
   If i > 4 Then
-    Worksheets(TeamName(team) + " 1").Cells(i, x + 1) = "=" + alpha(x) + retstr(i) + "-" + alpha(x) + retstr(i - 1)
+    teamRWPSheet1.Cells(i, x + 1) = "=" + alpha(x) + retstr(i) + "-" + alpha(x) + retstr(i - 1)
   End If
 Next i
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 4, x) = "=AVERAGE(" + alpha(x) + "4:" + alpha(x) + retstr(NumWholepulls(team) + 1) + ")"
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 4, x + 1) = "=AVERAGE(" + alpha(x + 1) + "5:" + alpha(x + 1) + retstr(NumWholepulls(team) + 1) + ")"
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, x) = "=STDEV(" + alpha(x) + "4:" + alpha(x) + retstr(NumWholepulls(team) + 1) + ")"
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, x + 1) = "=STDEV(" + alpha(x + 1) + "5:" + alpha(x + 1) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 4, x) = "=AVERAGE(" + alpha(x) + "4:" + alpha(x) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 4, x + 1) = "=AVERAGE(" + alpha(x + 1) + "5:" + alpha(x + 1) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 5, x) = "=STDEV(" + alpha(x) + "4:" + alpha(x) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 5, x + 1) = "=STDEV(" + alpha(x + 1) + "5:" + alpha(x + 1) + retstr(NumWholepulls(team) + 1) + ")"
 
 'actual lead interval
 x = (NumBells(team) * 2) + 9
-Worksheets(TeamName(team) + " 1").Cells(1, x) = "ACTUAL"
-Worksheets(TeamName(team) + " 1").Cells(2, x) = "LEAD"
-Worksheets(TeamName(team) + " 1").Cells(3, x) = "INTERVAL"
+teamRWPSheet1.Cells(1, x) = "ACTUAL"
+teamRWPSheet1.Cells(2, x) = "LEAD"
+teamRWPSheet1.Cells(3, x) = "INTERVAL"
 For i = 4 To NumWholepulls(team) + 1
-  Worksheets(TeamName(team) + " 1").Cells(i, x) = "=" + alpha((NumBells(team) * 2) + 2) + retstr(i) + "-" + alpha((NumBells(team) * 2) + 1) + retstr(i)
+  teamRWPSheet1.Cells(i, x) = "=" + alpha((NumBells(team) * 2) + 2) + retstr(i) + "-" + alpha((NumBells(team) * 2) + 1) + retstr(i)
 Next i
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 4, x) = "=AVERAGE(" + alpha(x) + "4:" + alpha(x) + retstr(NumWholepulls(team)) + ")"
-Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, x) = "=STDEV(" + alpha(x) + "4:" + alpha(x) + retstr(NumWholepulls(team)) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 4, x) = "=AVERAGE(" + alpha(x) + "4:" + alpha(x) + retstr(NumWholepulls(team)) + ")"
+teamRWPSheet1.Cells(NumWholepulls(team) + 5, x) = "=STDEV(" + alpha(x) + "4:" + alpha(x) + retstr(NumWholepulls(team)) + ")"
 
 'now setup the gap table
 x = (NumBells(team) * 2) + 11
@@ -889,13 +956,13 @@ For i = x To x + ((NumBells(team) * 2) - 1)
   While bell2 > NumBells(team)
     bell2 = bell2 - 12
   Wend
-  Worksheets(TeamName(team) + " 1").Cells(2, i) = "'" + bell_numtochar(bell1) + "-" + bell_numtochar(bell2)
+  teamRWPSheet1.Cells(2, i) = "'" + bell_numtochar(bell1) + "-" + bell_numtochar(bell2)
   For j = 3 To NumWholepulls(team) + 1
-    Worksheets(TeamName(team) + " 1").Cells(j, i) = "=" + alpha(i - x + 3) + retstr(j) + "-" + alpha(i - x + 2) + retstr(j)
+    teamRWPSheet1.Cells(j, i) = "=" + alpha(i - x + 3) + retstr(j) + "-" + alpha(i - x + 2) + retstr(j)
   Next j
-  Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 4, i) = "=AVERAGE(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
-  Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 5, i) = "=STDEV(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
-  If i = x Then Worksheets(TeamName(team) + " 1").Cells(NumWholepulls(team) + 7, i) = "=COUNTIF(" + alpha(i) + "4:" + alpha(x + ((NumBells(team) * 2) - 2)) + retstr(NumWholepulls(team) + 1) + ",""<125"")"
+  teamRWPSheet1.Cells(NumWholepulls(team) + 4, i) = "=AVERAGE(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+  teamRWPSheet1.Cells(NumWholepulls(team) + 5, i) = "=STDEV(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+  If i = x Then teamRWPSheet1.Cells(NumWholepulls(team) + 7, i) = "=COUNTIF(" + alpha(i) + "4:" + alpha(x + ((NumBells(team) * 2) - 2)) + retstr(NumWholepulls(team) + 1) + ",""<125"")"
 Next i
 
 'now set all cells to 0 decimal places
@@ -1019,38 +1086,46 @@ Dim bell As Integer
 Dim bellstr As String
 Dim pos(2) As Integer
 
+Dim teamRWPSheet1 As Worksheet
+Dim teamRWPSheet2 As Worksheet
+
+Const RWP2_ID = "RWP2"
+
+Set teamRWPSheet1 = getTeamModelSheet1(team)
+
 'create sheet
-Sheets.Add After:=Sheets(Sheets.Count)
-ActiveSheet.Name = TeamName(team) + " 2"
-Worksheets(TeamName(team) + " 2").Activate
+Set teamRWPSheet2 = getTeamModelSheet2(team, createIfNotExist:=True, programmaticLabel:=RWP2_ID)
+'FIXME: Is it possible to get away without activating the sheet?
+teamRWPSheet2.Activate
+
 
 'display the faults by position
 numbellssingle = NumBells(team)
 numbellssingle = ((numbellssingle * 2) + 1) / 2
 For i = 2 To (NumBells(team) * 2) + 1
   For j = 4 To NumWholepulls(team) + 1
-    Worksheets(TeamName(team) + " 2").Cells(j, 1) = j - 3
-    Worksheets(TeamName(team) + " 2").Cells(j, i) = "='" + TeamName(team) + " 1" + "'!" + alpha(i) + retstr(j) + "-'" + TeamName(team) + " 1" + "'!$" + alpha((NumBells(team) * 2) + 3) + retstr(j) + "-('" + TeamName(team) + " 1" + "'!" + alpha(i) + "$2-" + Str(numbellssingle) + ")*'" + TeamName(team) + " 1" + "'!$" + alpha((NumBells(team) * 2) + 5) + retstr(j)
+    teamRWPSheet2.Cells(j, 1) = j - 3
+    teamRWPSheet2.Cells(j, i) = "='" + TeamName(team) + " 1" + "'!" + alpha(i) + retstr(j) + "-'" + TeamName(team) + " 1" + "'!$" + alpha((NumBells(team) * 2) + 3) + retstr(j) + "-('" + TeamName(team) + " 1" + "'!" + alpha(i) + "$2-" + Str(numbellssingle) + ")*'" + TeamName(team) + " 1" + "'!$" + alpha((NumBells(team) * 2) + 5) + retstr(j)
   Next j
   bellno = (i - 1) Mod NumBells(team)
   If bellno = 0 Then bellno = NumBells(team)
-  Worksheets(TeamName(team) + " 2").Cells(1, i) = bell_numtochar(bellno)
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 3, i) = "=AVERAGE(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 4, i) = "=STDEV(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
-  If i > 2 Then Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 5, i) = "=CORREL(" + alpha(i - 1) + retstr(4) + ":" + alpha(i - 1) + retstr(NumWholepulls(team) + 1) + "," + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 8, i) = "=SUMIF(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ",""<0"")"
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 9, i) = "=SUMIF(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ","">0"")"
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 10, i) = "=-" + alpha(i) + retstr(NumWholepulls(team) + 8) + "+" + alpha(i) + retstr(NumWholepulls(team) + 9)
+  teamRWPSheet2.Cells(1, i) = bell_numtochar(bellno)
+  teamRWPSheet2.Cells(NumWholepulls(team) + 3, i) = "=AVERAGE(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 4, i) = "=STDEV(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+  If i > 2 Then teamRWPSheet2.Cells(NumWholepulls(team) + 5, i) = "=CORREL(" + alpha(i - 1) + retstr(4) + ":" + alpha(i - 1) + retstr(NumWholepulls(team) + 1) + "," + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 8, i) = "=SUMIF(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ",""<0"")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 9, i) = "=SUMIF(" + alpha(i) + "4:" + alpha(i) + retstr(NumWholepulls(team) + 1) + ","">0"")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 10, i) = "=-" + alpha(i) + retstr(NumWholepulls(team) + 8) + "+" + alpha(i) + retstr(NumWholepulls(team) + 9)
 Next i
 
 'set up headings
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 3, 1) = "MEAN"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 4, 1) = "SD"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 5, 1) = "CORREL"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 7, 1) = "ERRORS"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 8, 1) = "FAST"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 9, 1) = "SLOW"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 10, 1) = "COMB."
+teamRWPSheet2.Cells(NumWholepulls(team) + 3, 1) = "MEAN"
+teamRWPSheet2.Cells(NumWholepulls(team) + 4, 1) = "SD"
+teamRWPSheet2.Cells(NumWholepulls(team) + 5, 1) = "CORREL"
+teamRWPSheet2.Cells(NumWholepulls(team) + 7, 1) = "ERRORS"
+teamRWPSheet2.Cells(NumWholepulls(team) + 8, 1) = "FAST"
+teamRWPSheet2.Cells(NumWholepulls(team) + 9, 1) = "SLOW"
+teamRWPSheet2.Cells(NumWholepulls(team) + 10, 1) = "COMB."
 
 'set color headings and alignment
 With Range("B1:" + alpha(NumBells(team) + 1) + "1")
@@ -1070,30 +1145,30 @@ With Range(alpha(NumBells(team) + 2) + "1:" + alpha((NumBells(team) * 2) + 1) + 
 End With
 
 'find and display biggest quick and slow blows
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 4, (NumBells(team) * 2) + 3) = "=MIN(B4:" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 1) + ")"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 3) = "=MAX(B4:" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet2.Cells(NumWholepulls(team) + 4, (NumBells(team) * 2) + 3) = "=MIN(B4:" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 1) + ")"
+teamRWPSheet2.Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 3) = "=MAX(B4:" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 1) + ")"
 
 'now do standard deviations by whole pulls
 For i = 4 To NumWholepulls(team) + 1
-  Worksheets(TeamName(team) + " 2").Cells(i, (NumBells(team) * 2) + 4) = "=STDEV(B" + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ")"
+  teamRWPSheet2.Cells(i, (NumBells(team) * 2) + 4) = "=STDEV(B" + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ")"
 Next i
 'use the adjusted timings to calculate the DEVSQ
-'Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 3, (NumBells(team) * 2) + 4) = "=(DEVSQ(B4:" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 1) + ")/(" + retstr(NumWholepulls(team) - 2) + "*" + retstr((NumBells(team) * 2) - 1) + "))^0.5"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 3, (NumBells(team) * 2) + 4) = "=(DEVSQ(" + alpha((NumBells(team) * 4) + 7) + "4:" + alpha((NumBells(team) * 6) + 6) + retstr(NumWholepulls(team) + 1) + ")/(" + retstr(NumWholepulls(team) - 2) + "*" + retstr((NumBells(team) * 2) - 1) + "))^0.5"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 4, (NumBells(team) * 2) + 4) = "='" + TeamName(team) + " 1'!" + alpha((NumBells(team) * 2) + 7) + retstr(NumWholepulls(team) + 5)
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 4) = "=if(" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 3) + "<" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 4) _
+'teamRWPSheet2.Cells(NumWholepulls(team) + 3, (NumBells(team) * 2) + 4) = "=(DEVSQ(B4:" + alpha((NumBells(team) * 2) + 1) + retstr(NumWholepulls(team) + 1) + ")/(" + retstr(NumWholepulls(team) - 2) + "*" + retstr((NumBells(team) * 2) - 1) + "))^0.5"
+teamRWPSheet2.Cells(NumWholepulls(team) + 3, (NumBells(team) * 2) + 4) = "=(DEVSQ(" + alpha((NumBells(team) * 4) + 7) + "4:" + alpha((NumBells(team) * 6) + 6) + retstr(NumWholepulls(team) + 1) + ")/(" + retstr(NumWholepulls(team) - 2) + "*" + retstr((NumBells(team) * 2) - 1) + "))^0.5"
+teamRWPSheet2.Cells(NumWholepulls(team) + 4, (NumBells(team) * 2) + 4) = "='" + TeamName(team) + " 1'!" + alpha((NumBells(team) * 2) + 7) + retstr(NumWholepulls(team) + 5)
+teamRWPSheet2.Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 4) = "=if(" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 3) + "<" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 4) _
             + ",((" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 4) + "^2-" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 3) + "^2)/4)^0.5,0)"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 6, (NumBells(team) * 2 + 4)) = "=(" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 3) + "^2+" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 5) + "^2)^0.5"
+teamRWPSheet2.Cells(NumWholepulls(team) + 6, (NumBells(team) * 2 + 4)) = "=(" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 3) + "^2+" + alpha((NumBells(team) * 2) + 4) + retstr(NumWholepulls(team) + 5) + "^2)^0.5"
 
 'set up the whole pulls rung
-touchptr = (AnalStart(team) + 1) * NumBells(team)
+touchptr = (StartAnalysis(team) + 1) * NumBells(team)
 touchblowptr = 1
 For i = 4 To NumWholepulls(team) + 1
   For j = ((NumBells(team) * 2) + 6) To ((NumBells(team) * 4) + 5)
-    Worksheets(TeamName(team) + " 2").Cells(i, j) = touchrung(team, touchptr)
+    teamRWPSheet2.Cells(i, j) = touchrung(team, touchptr)
     If touchrung(team, touchptr) <> touchblow(touchblowptr) Then
       'MsgBox ("Wrong blow at : " + Str(touchptr) + " actual = " + touchrung(team, touchptr) + " should be = " + touchblow(touchptr))
-      Worksheets(TeamName(team) + " 2").Cells(i, j).Interior.ColorIndex = 4
+      teamRWPSheet2.Cells(i, j).Interior.ColorIndex = 4
     End If
     touchptr = touchptr + 1
     touchblowptr = touchblowptr + 1
@@ -1142,15 +1217,15 @@ For i = 4 To NumWholepulls(team) + 1
      'and add an amount in for bigger bells to compensate for the difference between human ear and Hawkear.
      
      If Adjustment(bell, 1) < 0 Then
-          Worksheets(TeamName(team) + " 2").Cells(i, j) = "=OFFSET(A" + retstr(i) + ",0," + Str(pos(1)) + ") +" + retstr(Adjustment(bell, 1))
+          teamRWPSheet2.Cells(i, j) = "=OFFSET(A" + retstr(i) + ",0," + Str(pos(1)) + ") +" + retstr(Adjustment(bell, 1))
      Else
-          Worksheets(TeamName(team) + " 2").Cells(i, j) = "=OFFSET(A" + retstr(i) + ",0," + Str(pos(1)) + ") -" + retstr(Adjustment(bell, 1))
+          teamRWPSheet2.Cells(i, j) = "=OFFSET(A" + retstr(i) + ",0," + Str(pos(1)) + ") -" + retstr(Adjustment(bell, 1))
      End If
      
      If Adjustment(bell, 2) < 0 Then
-          Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team)) = "=OFFSET(A" + retstr(i) + ",0," + Str(pos(2)) + ") +" + retstr(Adjustment(bell, 2))
+          teamRWPSheet2.Cells(i, j + NumBells(team)) = "=OFFSET(A" + retstr(i) + ",0," + Str(pos(2)) + ") +" + retstr(Adjustment(bell, 2))
      Else
-         Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team)) = "=OFFSET(A" + retstr(i) + ",0," + Str(pos(2)) + ") -" + retstr(Adjustment(bell, 2))
+         teamRWPSheet2.Cells(i, j + NumBells(team)) = "=OFFSET(A" + retstr(i) + ",0," + Str(pos(2)) + ") -" + retstr(Adjustment(bell, 2))
      End If
      
   Next j
@@ -1164,57 +1239,57 @@ leadFaultPct = Worksheets("Settings").Range("optAnalysisQuickHandstrokeLeadPct")
 
 'and setup faults in columns
 For i = 4 To NumWholepulls(team) + 1
-  'Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 1) = "=COUNTIF(B" + retstr(i) + ",""<-" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2) * Sqr(2)) / 100) + """)"
-  'Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 2) = "=COUNTIF(C" + retstr(i) + ":" + alpha(NumBells(team) + 1) + retstr(i) + ",""<-" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2)) / 100) + """)"
-  'Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 3) = "=COUNTIF(B" + retstr(i) + ":" + alpha(NumBells(team) + 1) + retstr(i) + ","">+" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2)) / 100) + """)"
-  'Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 4) = "=COUNTIF(" + alpha(NumBells(team) + 2) + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ",""<-" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2)) / 100) + """)"
-  'Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 5) = "=COUNTIF(" + alpha(NumBells(team) + 2) + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ","">+" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2)) / 100) + """)"
+  'teamRWPSheet2.Cells(i, j + NumBells(team) + 1) = "=COUNTIF(B" + retstr(i) + ",""<-" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2) * Sqr(2)) / 100) + """)"
+  'teamRWPSheet2.Cells(i, j + NumBells(team) + 2) = "=COUNTIF(C" + retstr(i) + ":" + alpha(NumBells(team) + 1) + retstr(i) + ",""<-" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2)) / 100) + """)"
+  'teamRWPSheet2.Cells(i, j + NumBells(team) + 3) = "=COUNTIF(B" + retstr(i) + ":" + alpha(NumBells(team) + 1) + retstr(i) + ","">+" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2)) / 100) + """)"
+  'teamRWPSheet2.Cells(i, j + NumBells(team) + 4) = "=COUNTIF(" + alpha(NumBells(team) + 2) + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ",""<-" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2)) / 100) + """)"
+  'teamRWPSheet2.Cells(i, j + NumBells(team) + 5) = "=COUNTIF(" + alpha(NumBells(team) + 2) + retstr(i) + ":" + alpha((NumBells(team) * 2) + 1) + retstr(i) + ","">+" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * (Worksheets("Front").Cells(18, 2)) / 100) + """)"
 
-  Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 1) = "=COUNTIF(" + alpha(2) + retstr(i) + ",""<-" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * leadFaultPct) + """)"
-  Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 2) = "=COUNTIF(" + alpha((NumBells(team) * 4) + 7) + retstr(i) + ":" + alpha((NumBells(team) * 5) + 6) + retstr(i) + ",""<-" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * stdFaultPct) + """)"
-  Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 3) = "=COUNTIF(" + alpha((NumBells(team) * 4) + 7) + retstr(i) + ":" + alpha((NumBells(team) * 5) + 6) + retstr(i) + ","">+" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * stdFaultPct) + """)"
-  Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 4) = "=COUNTIF(" + alpha((NumBells(team) * 5) + 7) + retstr(i) + ":" + alpha((NumBells(team) * 6) + 6) + retstr(i) + ",""<-" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * stdFaultPct) + """)"
-  Worksheets(TeamName(team) + " 2").Cells(i, j + NumBells(team) + 5) = "=COUNTIF(" + alpha((NumBells(team) * 5) + 7) + retstr(i) + ":" + alpha((NumBells(team) * 6) + 6) + retstr(i) + ","">+" + retstr((Worksheets(TeamName(team) + " 1").Cells(i, (NumBells(team) * 2) + 5)) * stdFaultPct) + """)"
+  teamRWPSheet2.Cells(i, j + NumBells(team) + 1) = "=COUNTIF(" + alpha(2) + retstr(i) + ",""<-" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * leadFaultPct) + """)"
+  teamRWPSheet2.Cells(i, j + NumBells(team) + 2) = "=COUNTIF(" + alpha((NumBells(team) * 4) + 7) + retstr(i) + ":" + alpha((NumBells(team) * 5) + 6) + retstr(i) + ",""<-" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * stdFaultPct) + """)"
+  teamRWPSheet2.Cells(i, j + NumBells(team) + 3) = "=COUNTIF(" + alpha((NumBells(team) * 4) + 7) + retstr(i) + ":" + alpha((NumBells(team) * 5) + 6) + retstr(i) + ","">+" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * stdFaultPct) + """)"
+  teamRWPSheet2.Cells(i, j + NumBells(team) + 4) = "=COUNTIF(" + alpha((NumBells(team) * 5) + 7) + retstr(i) + ":" + alpha((NumBells(team) * 6) + 6) + retstr(i) + ",""<-" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * stdFaultPct) + """)"
+  teamRWPSheet2.Cells(i, j + NumBells(team) + 5) = "=COUNTIF(" + alpha((NumBells(team) * 5) + 7) + retstr(i) + ":" + alpha((NumBells(team) * 6) + 6) + retstr(i) + ","">+" + retstr((teamRWPSheet1.Cells(i, (NumBells(team) * 2) + 5)) * stdFaultPct) + """)"
 Next i
        
 
 'do the rows underneath
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 3, ((NumBells(team) * 4) + 6)) = "MEAN"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 4, ((NumBells(team) * 4) + 6)) = "SD"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 5, ((NumBells(team) * 4) + 6)) = "COMB."
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 7, ((NumBells(team) * 4) + 6)) = "ERRORS"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 8, ((NumBells(team) * 4) + 6)) = "FAST"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 9, ((NumBells(team) * 4) + 6)) = "SLOW"
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 10, ((NumBells(team) * 4) + 6)) = "COMB."
-Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 11, ((NumBells(team) * 4) + 6)) = "OVERALL"
+teamRWPSheet2.Cells(NumWholepulls(team) + 3, ((NumBells(team) * 4) + 6)) = "MEAN"
+teamRWPSheet2.Cells(NumWholepulls(team) + 4, ((NumBells(team) * 4) + 6)) = "SD"
+teamRWPSheet2.Cells(NumWholepulls(team) + 5, ((NumBells(team) * 4) + 6)) = "COMB."
+teamRWPSheet2.Cells(NumWholepulls(team) + 7, ((NumBells(team) * 4) + 6)) = "ERRORS"
+teamRWPSheet2.Cells(NumWholepulls(team) + 8, ((NumBells(team) * 4) + 6)) = "FAST"
+teamRWPSheet2.Cells(NumWholepulls(team) + 9, ((NumBells(team) * 4) + 6)) = "SLOW"
+teamRWPSheet2.Cells(NumWholepulls(team) + 10, ((NumBells(team) * 4) + 6)) = "COMB."
+teamRWPSheet2.Cells(NumWholepulls(team) + 11, ((NumBells(team) * 4) + 6)) = "OVERALL"
 For i = ((NumBells(team) * 4) + 7) To ((NumBells(team) * 6) + 6)
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 3, i) = "=AVERAGE(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 4, i) = "=STDEV(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 8, i) = "=SUMIF(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ",""<0"")"
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 9, i) = "=SUMIF(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ","">0"")"
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 10, i) = "=-" + alpha(i) + retstr(NumWholepulls(team) + 8) + " + " + alpha(i) + retstr(NumWholepulls(team) + 9)
+  teamRWPSheet2.Cells(NumWholepulls(team) + 3, i) = "=AVERAGE(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 4, i) = "=STDEV(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 8, i) = "=SUMIF(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ",""<0"")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 9, i) = "=SUMIF(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ","">0"")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 10, i) = "=-" + alpha(i) + retstr(NumWholepulls(team) + 8) + " + " + alpha(i) + retstr(NumWholepulls(team) + 9)
   If i > ((NumBells(team) * 5) + 6) Then
-    Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 5, i) = "=((" + alpha(i - 12) + retstr(NumWholepulls(team) + 4) + "^2+" + alpha(i) + retstr(NumWholepulls(team) + 4) + "^2)/2)^0.5"
-    Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 11, i) = "=" + alpha(i - 12) + retstr(NumWholepulls(team) + 10) + "+" + alpha(i) + retstr(NumWholepulls(team) + 10)
+    teamRWPSheet2.Cells(NumWholepulls(team) + 5, i) = "=((" + alpha(i - 12) + retstr(NumWholepulls(team) + 4) + "^2+" + alpha(i) + retstr(NumWholepulls(team) + 4) + "^2)/2)^0.5"
+    teamRWPSheet2.Cells(NumWholepulls(team) + 11, i) = "=" + alpha(i - 12) + retstr(NumWholepulls(team) + 10) + "+" + alpha(i) + retstr(NumWholepulls(team) + 10)
   End If
 Next i
 
 ' Count the faults
 For i = ((NumBells(team) * 6) + 8) To ((NumBells(team) * 6) + 12)
-  Worksheets(TeamName(team) + " 2").Cells(NumWholepulls(team) + 3, i) = "=SUM(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
+  teamRWPSheet2.Cells(NumWholepulls(team) + 3, i) = "=SUM(" + alpha(i) + retstr(4) + ":" + alpha(i) + retstr(NumWholepulls(team) + 1) + ")"
 Next i
 
 'set up column headings
 For i = ((NumBells(team) * 4) + 7) To ((NumBells(team) * 6) + 6)
     bellno = (i - (NumBells(team) * 4) + 6) Mod NumBells(team)
     If bellno = 0 Then bellno = NumBells(team)
-    Worksheets(TeamName(team) + " 2").Cells(1, i) = bell_numtochar(bellno)
+    teamRWPSheet2.Cells(1, i) = bell_numtochar(bellno)
 Next i
-Worksheets(TeamName(team) + " 2").Cells(1, (NumBells(team) * 6) + 8) = "QHL"
-Worksheets(TeamName(team) + " 2").Cells(1, (NumBells(team) * 6) + 9) = "QH"
-Worksheets(TeamName(team) + " 2").Cells(1, (NumBells(team) * 6) + 10) = "SH"
-Worksheets(TeamName(team) + " 2").Cells(1, (NumBells(team) * 6) + 11) = "QB"
-Worksheets(TeamName(team) + " 2").Cells(1, (NumBells(team) * 6) + 12) = "SB"
+teamRWPSheet2.Cells(1, (NumBells(team) * 6) + 8) = "QHL"
+teamRWPSheet2.Cells(1, (NumBells(team) * 6) + 9) = "QH"
+teamRWPSheet2.Cells(1, (NumBells(team) * 6) + 10) = "SH"
+teamRWPSheet2.Cells(1, (NumBells(team) * 6) + 11) = "QB"
+teamRWPSheet2.Cells(1, (NumBells(team) * 6) + 12) = "SB"
 
 'set color headings and alignment
 i = ((NumBells(team) * 4) + 7)
@@ -1566,7 +1641,7 @@ For i = 2 To 42
   teamcol = 2
   For team = 1 To 10
     If IsTeamProcessed(team) Then
-      Worksheets("HISTOGRAMS").Cells(i, teamcol) = histcount(Worksheets(TeamName(team) + " 2").Range(alpha((NumBells(team) * 4) + 7) + "4:" + alpha((NumBells(team) * 6) + 6) + retstr(NumWholepulls(team) + 1)), Worksheets("HISTOGRAMS").Cells(i, 1), span)
+      Worksheets("HISTOGRAMS").Cells(i, teamcol) = histcount(teamRWPSheet2.Range(alpha((NumBells(team) * 4) + 7) + "4:" + alpha((NumBells(team) * 6) + 6) + retstr(NumWholepulls(team) + 1)), Worksheets("HISTOGRAMS").Cells(i, 1), span)
       teamcol = teamcol + 1
     End If
   Next team

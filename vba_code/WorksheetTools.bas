@@ -133,10 +133,10 @@ Public Sub DeleteWorkingSheets()
     Application.DisplayAlerts = alertState
 End Sub
 
-Public Function WorksheetExists(SheetName As String)
+Public Function WorksheetExists(sheetName As String)
     Dim ws As Worksheet
     For Each ws In Worksheets
-        If ws.Name = SheetName Then
+        If ws.Name = sheetName Then
             WorksheetExists = True
             Exit Function
         End If
@@ -219,6 +219,31 @@ Public Sub RemoveProgrammaticSheetsCreatedBy(ByVal CreatorID As String)
     
     Application.DisplayAlerts = alertState
 End Sub
+
+
+Public Function FindWorksheet(ByVal sheetName As String, Optional createIfNotExist As Boolean = False, Optional programmaticLabel) As Worksheet
+    
+    If WorksheetExists(sheetName) Then
+        Set FindWorksheet = Worksheets(sheetName)
+    Else
+        If createIfNotExist Then
+            Dim returnSheet As Worksheet
+            
+            Set returnSheet = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+            returnSheet.Name = sheetName
+                            
+            If Not IsMissing(programmaticLabel) Then
+                RegisterProgrammaticSheet sheetName, programmaticLabel
+            End If
+            
+            Set FindWorksheet = returnSheet
+        Else
+            Set FindWorksheet = Nothing
+        End If
+    End If
+    
+End Function
+
 Public Sub RegisterProgrammaticSheet(ByVal CreatedSheet As String, ByVal CreatorID As String)
     Dim programmaticSheet As Worksheet
     Set programmaticSheet = Worksheets(PROGRAMMATIC_SHEET_NAME)

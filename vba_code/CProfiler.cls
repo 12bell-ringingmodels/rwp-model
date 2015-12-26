@@ -27,7 +27,7 @@ Public Sub StartProfiling(ByVal taskName As String)
     profileWs.Cells(1, profileColumn + 1) = "Delta"
     profileWs.Cells(1, profileColumn + 2) = "Abs"
     
-    profileRow = 1
+    profileRow = 2
     
     ticTime = GetTickCount()
     lastTockTime = 0
@@ -82,6 +82,3 @@ Private Property Get IsProfiling() As Boolean
     End If
 End Property
 
-Private Sub Class_Initialize()
-
-End Sub

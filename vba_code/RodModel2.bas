@@ -1291,9 +1291,12 @@ teamRWPSheet2.Cells(1, (NumBells(team) * 6) + 10) = "SH"
 teamRWPSheet2.Cells(1, (NumBells(team) * 6) + 11) = "QB"
 teamRWPSheet2.Cells(1, (NumBells(team) * 6) + 12) = "SB"
 
+teamRWPSheet2.Names.Add "RWPOutputByPlace", RefersTo:="=" & teamRWPSheet2.Cells(4, 2).Address
+teamRWPSheet2.Names.Add "RWPOutputByBell", RefersTo:="=" & teamRWPSheet2.Cells(4, 55).Address
+
 'set color headings and alignment
 i = ((NumBells(team) * 4) + 7)
-With Range(alpha(i) + "1:" + alpha(i + (NumBells(team) - 1)) + "1")
+With teamRWPSheet2.Range(alpha(i) + "1:" + alpha(i + (NumBells(team) - 1)) + "1")
     With .Interior
         .ColorIndex = 4
         .Pattern = xlSolid
@@ -1301,7 +1304,7 @@ With Range(alpha(i) + "1:" + alpha(i + (NumBells(team) - 1)) + "1")
     .HorizontalAlignment = xlCenter
 End With
 
-With Range(alpha(i + NumBells(team)) + "1:" + alpha(i + ((NumBells(team) * 2) - 1)) + "1")
+With teamRWPSheet2.Range(alpha(i + NumBells(team)) + "1:" + alpha(i + ((NumBells(team) * 2) - 1)) + "1")
     With .Interior
         .ColorIndex = 6
         .Pattern = xlSolid
@@ -1309,7 +1312,7 @@ With Range(alpha(i + NumBells(team)) + "1:" + alpha(i + ((NumBells(team) * 2) - 
     .HorizontalAlignment = xlCenter
 End With
 
-With Range(alpha(NumBells(team) + 2) + "1:" + alpha((NumBells(team) * 2) + 1) + "1")
+With teamRWPSheet2.Range(alpha(NumBells(team) + 2) + "1:" + alpha((NumBells(team) * 2) + 1) + "1")
     With .Interior
         .ColorIndex = 6
         .Pattern = xlSolid
@@ -1331,7 +1334,7 @@ Cells(NumWholepulls(team) + 5, (NumBells(team) * 2) + 3).NumberFormat = "0"
 Cells.Columns.AutoFit
 
 'align wholepulls
-    With Range(alpha((NumBells(team) * 2) + 6) + "4:" + alpha((NumBells(team) * 4) + 6) + retstr(NumWholepulls(team) + 3))
+    With teamRWPSheet2.Range(alpha((NumBells(team) * 2) + 6) + "4:" + alpha((NumBells(team) * 4) + 6) + retstr(NumWholepulls(team) + 3))
         .HorizontalAlignment = xlCenter
         .VerticalAlignment = xlBottom
         .WrapText = False

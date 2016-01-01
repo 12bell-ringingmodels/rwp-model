@@ -46,7 +46,7 @@ Private Function ToastXML_CreateStrikeData(ByVal teamIndex As Integer, toastDOM 
     Else
         For rowIndex = 1 To NumRows(teamIndex)
         
-            If (rowIndex >= StartAnalysis(teamIndex)) And (rowIndex <= EndAnalysis(teamIndex)) Then
+            If (rowIndex >= StartAnalysis(teamIndex) + 2) And (rowIndex <= EndAnalysis(teamIndex)) Then
                 Set workingElement = toastDOM.createElement("rowDelimiter")
                 Set workingAttribute = toastDOM.createAttribute("source")
                 workingAttribute.nodeValue = TOAST_RWP_SOURCE

@@ -45,14 +45,15 @@ Private Function ToastXML_CreateStrikeData(ByVal teamIndex As Integer, toastDOM 
         MsgBox "I'm not sure what has happened, but there is no model data to output in XML format. Output will be blank"
     Else
         For rowIndex = 1 To NumRows(teamIndex)
-        
-            If (rowIndex >= StartAnalysis(teamIndex) + 2) And (rowIndex <= EndAnalysis(teamIndex)) Then
+            ' StartAnalysis and EndAnalysis include a whole-pull either side of the  touch
+            If (rowIndex >= StartAnalysis(teamIndex) + 2) And (rowIndex <= EndAnalysis(teamIndex) - 2) Then
                 Set workingElement = toastDOM.createElement("rowDelimiter")
                 Set workingAttribute = toastDOM.createAttribute("source")
                 workingAttribute.nodeValue = TOAST_RWP_SOURCE
                 workingElement.setAttributeNode workingAttribute
                 
-                rowWithinTouch = rowIndex - StartAnalysis(teamIndex)
+                ' N.B. rowWithinTouch is zero-indexed
+                rowWithinTouch = rowIndex - (StartAnalysis(teamIndex) + 2)
                 
                 returnElement.appendChild workingElement
                 isWithinTouch = True
@@ -74,6 +75,8 @@ Private Function ToastXML_CreateStrikeData(ByVal teamIndex As Integer, toastDOM 
                     Dim columnOffset As Integer
                     
                     Dim idealTime As Double
+                    Dim timeError As Double
+                    Dim actualStrikeTime As Double
                     
                     Dim modelOutputElement As IXMLDOMElement
                     
@@ -82,10 +85,13 @@ Private Function ToastXML_CreateStrikeData(ByVal teamIndex As Integer, toastDOM 
                     workingAttribute.nodeValue = TOAST_RWP_SOURCE
                     modelOutputElement.setAttributeNode workingAttribute
                     
-                    wholePull = rowWithinTouch / 2
+                    ' N.B. rowWithinTouch zero-indexed
+                    wholePull = rowWithinTouch \ 2
                     columnOffset = (rowWithinTouch Mod 2) * NumBells(teamIndex)
                     
-                    idealTime = LoadTime(teamIndex, bellIndex, rowIndex).time - teamRWP2sheet.Range("RWPOutputByBell").Offset(wholePull, bellIndex - 1 + columnOffset).Value
+                    timeError = teamRWP2sheet.Range("RWPOutputByBell").Offset(wholePull, bellIndex - 1 + columnOffset).Value
+                    actualStrikeTime = LoadTime(teamIndex, bellIndex, rowIndex).time
+                    idealTime = actualStrikeTime - timeError
                     
                     Set workingElement = toastDOM.createElement("time")
                     workingElement.Text = Format(idealTime / 1000, "0.000")

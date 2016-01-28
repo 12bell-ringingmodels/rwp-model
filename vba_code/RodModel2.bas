@@ -1,6 +1,7 @@
 Attribute VB_Name = "RodModel2"
 Public Const MAXIMUM_TEAMS As Integer = 10
 Public Const MAXIMUM_BELLS As Integer = 16
+Public Const INVALID_STRIKE_TIME As Long = -2147483647
 
 'TODO: Should Offset(-2,2) be Offset(-2,3) - Not sure
 '       Range(avgDevTableTL.Offset(-2, 0), accErrTableTL.Offset(-2, 2)).Merge
@@ -613,43 +614,38 @@ Next i
 'Next i
 
 End Sub
-Sub order(ByRef inparray() As Strike, team As Integer, row As Integer)
+Sub order(ByRef inparray() As Strike, ByRef NumBells() As Integer, team As Integer, row As Integer)
 Dim pos As Integer
 Dim thistime As Long
 
-
-  For timeptr = 1 To 16
-    TimeOrder(timeptr) = 0
+  For timeptr = 1 To NumBells(team)
+    TimeOrder(timeptr) = INVALID_STRIKE_TIME
   Next timeptr
   
-  timeptr = 1
-  
-  For pos = 1 To 16
+  For pos = 1 To NumBells(team)
     thistime = inparray(team, pos, row).time
     'MsgBox (thistime)
-    If thistime <> 0 Then
-      For timeptr = 1 To 16
-        If TimeOrder(timeptr) = 0 Then
-          TimeOrder(timeptr) = thistime
-          Exit For
+    For timeptr = 1 To NumBells(team)
+      If TimeOrder(timeptr) = INVALID_STRIKE_TIME Then
+        TimeOrder(timeptr) = thistime
+        Exit For
+      End If
+      If thistime <= TimeOrder(timeptr) Then
+        'shuffle down and insert
+        If timeptr < NumBells(team) Then
+          For j = NumBells(team) To timeptr + 1 Step -1
+            TimeOrder(j) = TimeOrder(j - 1)
+          Next j
         End If
-        If thistime <= TimeOrder(timeptr) Then
-          'shuffle down and insert
-          If timeptr < 16 Then
-            For j = 16 To timeptr + 1 Step -1
-                TimeOrder(j) = TimeOrder(j - 1)
-            Next j
-          End If
-          TimeOrder(timeptr) = thistime
-          Exit For
-        End If
-      Next timeptr
-    End If
+        TimeOrder(timeptr) = thistime
+        Exit For
+      End If
+    Next timeptr
   Next pos
             
         
 End Sub
-Sub dispwholepulls(ByRef inparray() As Strike, team As Integer, nam As String, xpos As Integer, ypos As Integer)
+Sub dispwholepulls(ByRef inparray() As Strike, ByRef NumBells() As Integer, team As Integer, nam As String, xpos As Integer, ypos As Integer)
 Dim optr As Integer
 Dim j As Integer
 Dim lowesttime As Long
@@ -669,10 +665,9 @@ ActiveSheet.Name = TeamName(team) + nam
 
 
 For i = AnalStart(team) To AnalEnd(team)
-  Call order(inparray, team, i)
-  For j = 1 To 16
+  Call order(inparray, NumBells, team, i)
+  For j = 1 To NumBells(team)
     'MsgBox ("Check " + Str(j))
-    If TimeOrder(j) = 0 Then Exit For
     Sheets(TeamName(team) + nam).Cells(optr, k) = TimeOrder(j)
     k = k + 1
     If k > (xpos - 1) + NumBells(team) * 2 Then
@@ -696,7 +691,7 @@ Dim slowval As Integer
 Dim settingsSheet As Worksheet
 Set settingsSheet = Sheets(SETTINGS_SHEET_NAME)
 
-Call dispwholepulls(LoadTime, team, " 1", 2, 3)
+Call dispwholepulls(LoadTime, NumBells, team, " 1", 2, 3)
 
 'add the headers over the wholepulls
 For i = 1 To NumBells(team)
